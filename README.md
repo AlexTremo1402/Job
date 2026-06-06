@@ -146,10 +146,9 @@
             outline: none;
         }
 
-        /* Contenedor Híbrido: Barra + Zona de Eliminación */
         .workspace-zone {
             display: grid;
-            grid-template-columns: 1fr 100px;
+            grid-template-columns: 1fr 120px;
             gap: 10px;
             margin-bottom: 15px;
         }
@@ -159,7 +158,7 @@
                 grid-template-columns: 1fr;
             }
             .delete-zone {
-                height: 50px !important;
+                height: 55px !important;
             }
         }
 
@@ -172,10 +171,10 @@
             border-radius: 6px;
             overflow-x: auto;
             align-items: center;
+            touch-action: pan-x; 
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Mini sección para arrastrar y borrar */
         .delete-zone {
             background: #fdf2f2;
             border: 2px dashed var(--danger-color);
@@ -191,6 +190,7 @@
             text-align: center;
             padding: 5px;
             transition: background 0.2s, transform 0.2s;
+            user-select: none;
         }
 
         .delete-zone.hover-delete {
@@ -213,7 +213,6 @@
             align-items: center;
             gap: 4px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-            touch-action: none; /* Crucial para interceptar presión larga de forma nativa sin scroll accidental */
             transition: transform 0.1s, background-color 0.2s;
         }
 
@@ -254,19 +253,46 @@
             justify-content: space-between;
             align-items: center;
             background: #fff;
-            padding: 4px 8px;
-            margin-bottom: 4px;
+            padding: 6px 10px;
+            margin-bottom: 5px;
             border: 1px solid #e2e8f0;
-            border-radius: 3px;
+            border-radius: 4px;
             font-size: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .med-list-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .med-list-item span.med-count {
             background: #e2e8f0;
-            padding: 1px 6px;
+            padding: 2px 6px;
             border-radius: 10px;
             font-weight: bold;
             color: #4a5568;
+        }
+
+        .btn-remove-med {
+            background: #f8d7da;
+            color: var(--danger-color);
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+        }
+        .btn-remove-med:hover {
+            background: var(--danger-color);
+            color: white;
         }
 
         .empty-list-msg {
@@ -368,7 +394,6 @@
             font-size: 13px;
         }
 
-        /* REGLAS DE IMPRESIÓN COMPRESA A 1 HOJA A4 */
         @media print {
             @page {
                 size: A4 portrait;
@@ -376,20 +401,20 @@
             }
             body { background: #fff; padding: 0; margin: 0; }
             .container { box-shadow: none; padding: 0; max-width: 100%; width: 100%; }
-            .creator-panel, .btn-row, button, .search-container, .workspace-zone, p, label[for="totals-alphabetical-select"], #totals-alphabetical-select {
+            .creator-panel, .btn-row, button, .search-container, .workspace-zone, p, label[for="totals-alphabetical-select"], #totals-alphabetical-select, .btn-remove-med {
                 display: none !important;
             }
             input[type="text"], input[type="time"], textarea {
                 border: none !important;
                 background: transparent !important;
                 padding: 0 !important;
-                text-align: left !important;
+                text-align: center !important;
             }
             th, td { padding: 6px 5px !important; font-size: 11px !important; }
             .section { margin-bottom: 12px !important; }
             .section-title { padding: 4px 8px !important; font-size: 12px !important; margin-bottom: 6px !important; }
             .patient-drop-cell { min-height: auto !important; border: none !important; padding: 0 !important; }
-            .med-list-item { border: none !important; padding: 2px 0 !important; margin: 0 !important; }
+            .med-list-item { border: none !important; padding: 2px 0 !important; margin: 0 !important; box-shadow: none; }
             .notes-area { padding: 8px !important; }
             .notes-area textarea { height: 50px !important; }
         }
@@ -425,11 +450,11 @@
                 </tr>
             </thead>
             <tbody id="patients-tbody">
-                <tr id="reg-row-1">
-                    <td><b>Paciente 1</b></td>
+                <tr id="reg-row-1" data-id="1">
+                    <td><b class="paciente-lbl-master">Paciente 1</b></td>
                     <td><input type="text" id="input-pname-1" placeholder="Ej. García Mendoza" oninput="syncPatientName(1)"></td>
                     <td><input type="text" placeholder="Cédula"></td>
-                    <td><input type="time"></td>
+                    <td><input type="time" id="time-pname-1" onchange="sortPatientsByTime()"></td>
                 </tr>
             </tbody>
         </table>
@@ -469,7 +494,7 @@
         </div>
 
         <p style="font-size: 11px; margin-bottom: 6px; color: #555; font-weight: bold;">
-            💡 Celular: Pulsa un insumo y luego al Paciente. <b>Mantén pulsado 1 segundo para eliminarlo</b> o arrástralo al cubo rojo.
+            💡 Deslice con el dedo de lado a lado para buscar. Presione un insumo y toque la celda del paciente. Mantenga pulsado 1s para borrar el insumo del sistema o arrástrelo a la papelera.
         </p>
         
         <div class="workspace-zone">
@@ -497,8 +522,8 @@
             </div>
 
             <div class="delete-zone" id="main-delete-zone" ondragover="allowDeleteOver(event)" ondragleave="dragDeleteLeave(event)" ondrop="dropDeleteInsumo(event)">
-                <span>🗑️</span>
-                <span>Arrastrar aquí para borrar</span>
+                <span>🗑️ Papelera</span>
+                <span style="font-size:9px; font-weight:normal;">Soltar aquí</span>
             </div>
         </div>
 
@@ -506,11 +531,11 @@
             <thead>
                 <tr>
                     <th style="width: 30%;">Paciente Activo</th>
-                    <th style="width: 70%;">Medicamentos e Insumos Entregados</th>
+                    <th style="width: 70%;">Medicamentos e Insumos Entregados (Toque 'X' para quitar)</th>
                 </tr>
             </thead>
             <tbody id="monitoring-tbody">
-                <tr id="mon-row-1">
+                <tr id="mon-row-1" data-id="1">
                     <td id="lbl-pname-1" style="font-weight: bold; color: var(--accent-color); cursor:pointer;">Paciente 1</td>
                     <td>
                         <div class="patient-drop-cell" id="drop-cell-1" data-patient-id="1"
@@ -566,12 +591,16 @@
     let selectedInsumoId = null; 
     let draggedElementId = null;
     let uniqueIdCounter = 0;
-    let touchTimer = null; // Temporizador para presión larga táctil
+    let touchTimer = null; 
 
     document.addEventListener("DOMContentLoaded", function() {
         const dateInput = document.getElementById('current-date');
         const opciones = { day: 'numeric', month: 'long' };
         dateInput.value = new Date().toLocaleDateString('es-ES', opciones);
+        
+        const now = new Date();
+        document.getElementById('time-pname-1').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        
         setupInsumoSelectionEvents();
         updateTotalsDisplay();
     });
@@ -593,14 +622,17 @@
     function addPatientMaster() {
         totalPatientsCount++;
         const currentId = totalPatientsCount;
+        const now = new Date();
+        const currentHour = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         
         const rowMaster = document.createElement('tr');
         rowMaster.id = `reg-row-${currentId}`;
+        rowMaster.setAttribute('data-id', currentId);
         rowMaster.innerHTML = `
-            <td><b>Paciente ${currentId}</b></td>
-            <td><input type="text" id="input-pname-${currentId}" placeholder="Apellidos" oninput="syncPatientName(${currentId})"></td>
+            <td><b class="paciente-lbl-master">Paciente ${currentId}</b></td>
+            <td><input type="text" id="input-pname-${currentId}" placeholder="Ej. Apellidos" oninput="syncPatientName(${currentId})"></td>
             <td><input type="text" placeholder="Cédula"></td>
-            <td><input type="time" value="${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}"></td>
+            <td><input type="time" id="time-pname-${currentId}" value="${currentHour}" onchange="sortPatientsByTime()"></td>
         `;
         document.getElementById('patients-tbody').appendChild(rowMaster);
 
@@ -608,6 +640,7 @@
 
         const rowMonitoring = document.createElement('tr');
         rowMonitoring.id = `mon-row-${currentId}`;
+        rowMonitoring.setAttribute('data-id', currentId);
         rowMonitoring.innerHTML = `
             <td id="lbl-pname-${currentId}" style="font-weight: bold; color: var(--accent-color); cursor:pointer;">Paciente ${currentId}</td>
             <td>
@@ -619,6 +652,36 @@
             </td>
         `;
         document.getElementById('monitoring-tbody').appendChild(rowMonitoring);
+        
+        sortPatientsByTime();
+    }
+
+    function sortPatientsByTime() {
+        const tbodyMaster = document.getElementById('patients-tbody');
+        const rowsMaster = Array.from(tbodyMaster.querySelectorAll('tr'));
+
+        rowsMaster.sort((a, b) => {
+            const idA = a.getAttribute('data-id');
+            const idB = b.getAttribute('data-id');
+            const timeA = document.getElementById(`time-pname-${idA}`).value || "00:00";
+            const timeB = document.getElementById(`time-pname-${idB}`).value || "00:00";
+            return timeB.localeCompare(timeA); 
+        });
+
+        rowsMaster.forEach(row => tbodyMaster.appendChild(row));
+
+        const tbodyMon = document.getElementById('monitoring-tbody');
+        const rowsMon = Array.from(tbodyMon.querySelectorAll('tr'));
+
+        rowsMon.sort((a, b) => {
+            const idA = a.getAttribute('data-id');
+            const idB = b.getAttribute('data-id');
+            const timeA = document.getElementById(`time-pname-${idA}`).value || "00:00";
+            const timeB = document.getElementById(`time-pname-${idB}`).value || "00:00";
+            return timeB.localeCompare(timeA);
+        });
+
+        rowsMon.forEach(row => tbodyMon.appendChild(row));
     }
 
     function createNewInsumoElement() {
@@ -685,17 +748,14 @@
         });
     }
 
-    // GESTIÓN DE EVENTOS: TOQUE SELECCIÓN, DRAG & DROP Y PRESIÓN LARGA
     function setupInsumoSelectionEvents() {
         const items = document.querySelectorAll('.drag-item');
         items.forEach(item => {
-            // Drag clásico (Computadora)
             item.addEventListener('dragstart', function(e) {
                 e.dataTransfer.setData('text/plain', this.id);
-                draggedElementId = this.id;
+                draggedElementId = this.id; // Respaldo global para navegadores móviles/híbridos
             });
 
-            // Toque/Selección rápida en Celular
             item.onclick = function(e) {
                 e.stopPropagation();
                 if (selectedInsumoId === this.id) {
@@ -708,13 +768,11 @@
                 }
             };
 
-            // CAPTURADOR DE PRESIÓN LARGA (MANTENER PULSADO 1 SEGUNDO EN CELULARES)
             item.addEventListener('touchstart', function(e) {
                 draggedElementId = this.id;
-                // Iniciamos temporizador de 1000ms (1 segundo)
                 touchTimer = setTimeout(() => {
                     if (window.navigator && window.navigator.vibrate) {
-                        window.navigator.vibrate(50); // Feedback táctil leve
+                        window.navigator.vibrate(50);
                     }
                     triggerInsumoDeletion(this.id);
                 }, 1000);
@@ -725,51 +783,52 @@
             }, { passive: true });
 
             item.addEventListener('touchmove', function(e) {
-                // Si el usuario mueve el dedo (hace scroll), cancelamos la presión larga
                 if (touchTimer) clearTimeout(touchTimer);
             }, { passive: true });
         });
     }
 
-    // PROCESAMIENTO Y ELIMINACIÓN DE INSUMO FÍSICO
     function triggerInsumoDeletion(elementId) {
+        if (!elementId) return; // Validación anti-errores catastróficos
         const item = document.getElementById(elementId);
         if (!item) return;
         
         const insumoName = item.getAttribute('data-name');
-        const confirmDelete = confirm(`¿Deseas eliminar definitivamente el insumo "${insumoName}" de la barra disponible?`);
+        const confirmDelete = confirm(`¿Deseas eliminar el insumo "${insumoName}" de la barra disponible?`);
         
         if (confirmDelete) {
-            // Remover del inventario indexado global
             if (insumosRegistroGlobal.hasOwnProperty(insumoName)) {
                 delete insumosRegistroGlobal[insumoName];
             }
-            // Resetear selección si era el elemento activo
             if (selectedInsumoId === elementId) selectedInsumoId = null;
-            
             item.remove();
+            
             updateTotalsDisplay();
         }
     }
 
-    // MANIPULACIÓN DEL RECUADRO "DRAP TO DELETE" (CUBO ROJO)
-    function allowDeleteOver(e) {
-        e.preventDefault();
-        document.getElementById('main-delete-zone').classList.add('hover-delete');
+    function allowDeleteOver(e) { 
+        e.preventDefault(); 
+        document.getElementById('main-delete-zone').classList.add('hover-delete'); 
     }
-
-    function dragDeleteLeave(e) {
-        document.getElementById('main-delete-zone').classList.remove('hover-delete');
+    
+    function dragDeleteLeave(e) { 
+        document.getElementById('main-delete-zone').classList.remove('hover-delete'); 
     }
-
+    
     function dropDeleteInsumo(e) {
         e.preventDefault();
         document.getElementById('main-delete-zone').classList.remove('hover-delete');
+        
+        // CORRECCIÓN CRÍTICA: Intenta leer el id desde la transferencia nativa de datos o recupera el respaldo global.
         let id = e.dataTransfer.getData('text/plain') || draggedElementId;
+        
         if (id) {
             triggerInsumoDeletion(id);
+        } else {
+            alert("No se pudo detectar el insumo seleccionado. Por favor, vuelve a arrastrarlo o usa presión larga.");
         }
-        draggedElementId = null;
+        draggedElementId = null; // Reiniciar referencias seguras
     }
 
     function cellClicked(pId) {
@@ -812,25 +871,56 @@
         updateTotalsDisplay();
     }
 
+    function removeSingleInsumoFromPatient(pId, insumoName, event) {
+        if(event) event.stopPropagation(); 
+
+        if (datosInsumosPacientes[pId] && datosInsumosPacientes[pId][insumoName] > 0) {
+            datosInsumosPacientes[pId][insumoName]--;
+            
+            if (insumosRegistroGlobal[insumoName] > 0) {
+                insumosRegistroGlobal[insumoName]--;
+            }
+
+            if (datosInsumosPacientes[pId][insumoName] === 0) {
+                delete datosInsumosPacientes[pId][insumoName];
+            }
+
+            renderPatientCellList(pId);
+            updateTotalsDisplay();
+        }
+    }
+
     function renderPatientCellList(pId) {
         const cell = document.getElementById(`drop-cell-${pId}`);
-        const msg = document.getElementById(`empty-msg-${pId}`);
-        if (msg) msg.remove();
+        if (!cell) return;
 
         cell.querySelectorAll('.med-list-item').forEach(el => el.remove());
 
-        const medData = datosInsumosPacientes[pId];
-        Object.keys(medData).sort().forEach(medName => {
-            const qty = medData[medName];
-            if (qty > 0) {
-                const listItem = document.createElement('div');
-                listItem.className = 'med-list-item';
-                listItem.innerHTML = `
-                    <span class="med-name">▪️ ${medName}</span>
-                    <span class="med-count">x${qty}</span>
-                `;
-                cell.appendChild(listItem);
+        const medData = datosInsumosPacientes[pId] || {};
+        const activeKeys = Object.keys(medData).filter(k => medData[k] > 0);
+
+        if (activeKeys.length === 0) {
+            if (!document.getElementById(`empty-msg-${pId}`)) {
+                cell.innerHTML = `<div class="empty-list-msg" id="empty-msg-${pId}">Sin insumos asignados</div>`;
             }
+            return;
+        }
+
+        const msg = document.getElementById(`empty-msg-${pId}`);
+        if (msg) msg.remove();
+
+        activeKeys.sort().forEach(medName => {
+            const qty = medData[medName];
+            const listItem = document.createElement('div');
+            listItem.className = 'med-list-item';
+            listItem.innerHTML = `
+                <span class="med-name">▪️ ${medName}</span>
+                <div class="med-list-right">
+                    <span class="med-count">x${qty}</span>
+                    <button class="btn-remove-med" onclick="removeSingleInsumoFromPatient(${pId}, '${medName}', event)">✕</button>
+                </div>
+            `;
+            cell.appendChild(listItem);
         });
     }
 
